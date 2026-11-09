@@ -46,15 +46,23 @@ month_mapping = {
 selected_month = st.sidebar.selectbox("Month", list(month_mapping.keys()))
 month = month_mapping[selected_month]
 
-# --- AUTOMATIC SMART LAG ESTIMATION ---
-# Derived dynamically from the selected hour to maintain pipeline integrity
-base_traffic = 2000 + (2500 * np.sin(np.pi * hour / 12)) if 7 <= hour <= 19 else 1000
+# --- IMPROVED SMART LAG ESTIMATION ---
+# Tied directly to realistic rush-hour peaks to match model training patterns
 if is_weekend:
-    base_traffic *= 0.6  # Lower traffic on weekends
+    base_traffic = 1200 + 800 * np.sin(np.pi * hour / 12)
+else:
+    if 7 <= hour <= 9:
+        base_traffic = 4800 + np.random.randint(-100, 100)  # Morning rush peak
+    elif 16 <= hour <= 18:
+        base_traffic = 5100 + np.random.randint(-100, 100)  # Evening rush peak
+    elif 10 <= hour <= 15:
+        base_traffic = 3300 + np.random.randint(-100, 100)  # Midday steady flow
+    else:
+        base_traffic = 1100 + np.random.randint(-50, 50)    # Night / early morning
 
-traffic_lag_1h = base_traffic + np.random.randint(-100, 100)
-traffic_lag_24h = base_traffic + np.random.randint(-150, 150)
-rolling_mean_3h = base_traffic + np.random.randint(-50, 50)
+traffic_lag_1h = base_traffic + np.random.randint(-50, 50)
+traffic_lag_24h = base_traffic + np.random.randint(-100, 100)
+rolling_mean_3h = base_traffic + np.random.randint(-30, 30)
 
 # Cyclical feature engineering (matching your model pipeline)
 hour_sin = np.sin(2 * np.pi * hour / 24.0)
