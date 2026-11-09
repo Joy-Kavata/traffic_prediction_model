@@ -46,8 +46,7 @@ month_mapping = {
 selected_month = st.sidebar.selectbox("Month", list(month_mapping.keys()))
 month = month_mapping[selected_month]
 
-# --- IMPROVED SMART LAG ESTIMATION ---
-# Tied directly to realistic rush-hour peaks to match model training patterns
+# --- SMART LAG ESTIMATION ---
 if is_weekend:
     base_traffic = 1200 + 800 * np.sin(np.pi * hour / 12)
 else:
@@ -64,18 +63,23 @@ traffic_lag_1h = base_traffic + np.random.randint(-50, 50)
 traffic_lag_24h = base_traffic + np.random.randint(-100, 100)
 rolling_mean_3h = base_traffic + np.random.randint(-30, 30)
 
-# Cyclical feature engineering (matching your model pipeline)
+# Cyclical feature engineering
 hour_sin = np.sin(2 * np.pi * hour / 24.0)
 hour_cos = np.cos(2 * np.pi * hour / 24.0)
 
-# Build prediction dataframe matching training columns
-input_data = pd.DataFrame([[
-    hour, day_of_week, month, is_weekend, hour_sin, hour_cos, 
-    traffic_lag_1h, traffic_lag_24h, rolling_mean_3h
-]], columns=[
-    'hour', 'day_of_week', 'month', 'is_weekend', 'hour_sin', 'hour_cos', 
+# --- STRICT FEATURE ORDERING ---
+# Ensure columns match the exact sequence your model was trained on
+feature_columns = [
+    'hour', 'day_of_week', 'month', 'is_weekend', 
+    'hour_sin', 'hour_cos', 
     'traffic_lag_1h', 'traffic_lag_24h', 'rolling_mean_3h'
-])
+]
+
+input_data = pd.DataFrame([[
+    hour, day_of_week, month, is_weekend, 
+    hour_sin, hour_cos, 
+    traffic_lag_1h, traffic_lag_24h, rolling_mean_3h
+]], columns=feature_columns)
 
 # --- MAIN DASHBOARD DISPLAY ---
 col1, col2 = st.columns(2)
